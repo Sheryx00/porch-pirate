@@ -8,29 +8,17 @@ def main():
         description="Porch Pirate CLI Tool - A tool to fetch and manipulate workspace data."
     )
 
-    # Verbosity argument
+    # Arguments
     parser.add_argument('-v', '--verbose', help="Increase output verbosity", action="store_true")
-
-    # Group: Search Operations
-    group_search = parser.add_argument_group('Search Operations')
-    group_search.add_argument('-s', '--search', help="Search using a keyword", type=str)
-
-    # Group: Workspace Operations
-    group_workspace = parser.add_argument_group('Workspace Operations')
-    group_workspace.add_argument('-w', '--workspace', help="Get workspace details by ID", type=str)
-    group_workspace.add_argument('--globals', help="Get workspace globals by ID", action="store_true")
-    group_workspace.add_argument('--collections', help="Get workspace collections by ID", action="store_true")
-
-    # Group: Collection Operations
-    group_collection = parser.add_argument_group('Collection Operations')
-    group_collection.add_argument('--requests', help="Get collection requests by ID", action="store_true")
-    group_collection.add_argument('--urls', help="Show URLs from collections", action="store_true")
-
-    # Group: Miscellaneous Operations
-    group_misc = parser.add_argument_group('Miscellaneous Operations')
-    group_misc.add_argument('--dump', help="Dump raw JSON response", action="store_true")
-    group_misc.add_argument('--raw', help="Print raw request details", action="store_true")
-    group_misc.add_argument('--curl', help="Convert a request to cURL", action="store_true")
+    parser.add_argument('-s', '--search', help="Search using a keyword", type=str)
+    parser.add_argument('-w', '--workspace', help="Get workspace details by ID", type=str)
+    parser.add_argument('--globals', help="Fetch workspace globals recursively or by ID", action="store_true")
+    parser.add_argument('--collections', help="Get workspace collections by ID", action="store_true")
+    parser.add_argument('--requests', help="Get collection requests by ID", action="store_true")
+    parser.add_argument('--urls', help="Show URLs from collections", action="store_true")
+    parser.add_argument('--dump', help="Dump raw JSON response", action="store_true")
+    parser.add_argument('--raw', help="Print raw request details", action="store_true")
+    parser.add_argument('--curl', help="Convert a request to cURL", action="store_true")
 
     args = parser.parse_args()
     p = porchPirate()
@@ -44,8 +32,26 @@ def main():
         # Search Functionality
         if args.search:
             log("Performing search...")
-            results = p.search(args.search)
-            formats.format_search(json.loads(results))
+            results = json.loads(p.search(args.search))
+
+            if not args.globals:
+                formats.format_search(results)
+            else:
+                log("Fetching workspace globals recursively...")
+                results_data = results.get('data', [])
+                workspace_ids = []
+
+                # Extract workspace IDs from the search results
+                for result in results_data:
+                    workspaces = result.get('document', {}).get('workspaces', [])
+                    for workspace in workspaces:
+                        workspace_ids.append(workspace['id'])
+
+                # Fetch and display workspace globals for each ID
+                for workspace_id in set(workspace_ids):  # Use set to remove duplicates
+                    log(f"Fetching globals for workspace ID: {workspace_id}")
+                    globals_data = json.loads(p.workspace_globals(workspace_id))
+                    formats.format_globals(globals_data)
 
         # Workspace Operations
         if args.workspace:
