@@ -102,7 +102,7 @@ def format_globals(global_results):
 
     values = safe_get(global_results, ['data', 'values'], [])
     if not values:
-        print(f"{RED}No globals found.{END}")
+        print(f"{RED}No globals values found.{END}")
         return
 
     for idx, result in enumerate(values, 1):

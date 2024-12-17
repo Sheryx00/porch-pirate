@@ -14,11 +14,11 @@ def main():
     parser.add_argument('-w', '--workspace', help="Get workspace details by ID", type=str)
     parser.add_argument('--globals', help="Fetch workspace globals recursively or by ID", action="store_true")
     parser.add_argument('--collections', help="Get workspace collections by ID", action="store_true")
-    parser.add_argument('--requests', help="Get collection requests by ID", action="store_true")
-    parser.add_argument('--urls', help="Show URLs from collections", action="store_true")
+    parser.add_argument('--requests', help="Get collection requests by ID")
+    parser.add_argument('--urls', help="Show URLs from a collection ID",action="store_true")
     parser.add_argument('--dump', help="Dump raw JSON response", action="store_true")
     parser.add_argument('--raw', help="Print raw request details", action="store_true")
-    parser.add_argument('--curl', help="Convert a request to cURL", action="store_true")
+    parser.add_argument('--curl', help="Convert a request to cURL by ID", type=str)
 
     args = parser.parse_args()
     p = porchPirate()
@@ -64,46 +64,59 @@ def main():
                 globals_data = json.loads(p.workspace_globals(args.workspace))
                 formats.format_globals(globals_data)
 
-
             if args.collections:
                 log("Fetching workspace collections...")
                 collections = json.loads(p.collections(args.workspace))
                 formats.format_collection(collections)
 
-        # Placeholder: Requests
+        # Fetch Requests
         if args.requests:
-            log("Fetching requests...")
-            print("Feature not implemented yet. Please check back later.")
-            exit(1)
+            log(f"Fetching requests for collection ID: {args.requests}")
+            collection_requests = json.loads(p.request(args.requests))
+            formats.format_request(collection_requests, args.requests)
 
-        # Placeholder: URLs
+        # Show URLs from a Collection
         if args.urls:
-            log("Extracting URLs...")
-            print("Feature not implemented yet. Please check back later.")
-            exit(1)
+            log(f"Extracting URLs from collection ID: {args.urls}")
+            collection_data = json.loads(p.collection(args.workspace))
+            requests = collection_data.get('data', {}).get('order', [])
+            for request in requests:
+                print(f"URL: {request['url']}")
 
-        # Placeholder: Dump Raw JSON
+        # Dump Raw JSON
         if args.dump:
             log("Dumping raw JSON response...")
-            print("Feature not implemented yet. Please check back later.")
-            exit(1)
+            if args.workspace:
+                response = p.workspace(args.workspace)
+            elif args.requests:
+                response = p.request(args.requests)
+            elif args.search:
+                response = p.search(args.search)
+            else:
+                print(f"[ERROR] No data source specified for dump.")
+                return
+            print(json.dumps(json.loads(response), indent=4))
 
-        # Placeholder: Raw Request Details
+        # Print Raw Request Details
         if args.raw:
-            log("Showing raw request details...")
-            print("Feature not implemented yet. Please check back later.")
-            exit(1)
+            log(f"Showing raw request details for ID: {args.requests}")
+            if not args.requests:
+                print(f"[ERROR] --raw requires a collection request ID via --requests.")
+                return
+            raw_data = json.loads(p.request(args.requests))
+            print(json.dumps(raw_data, indent=4))
 
-        # Placeholder: Generate cURL Command
+        # Generate cURL Command
         if args.curl:
-            log("Generating cURL command...")
-            print("Feature not implemented yet. Please check back later.")
-            exit(1)
+            log(f"Generating cURL command for request ID: {args.curl}")
+            raw_request = json.loads(p.request(args.curl))
+            curl_command = p.build_curl_request(raw_request)
+            print("\nGenerated cURL Command:\n")
+            print(curl_command)
 
     except Exception as e:
         print(f"Error: {e}")
         exit(1)
-
 
 if __name__ == "__main__":
     main()
