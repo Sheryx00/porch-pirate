@@ -5,6 +5,10 @@ from urllib3.exceptions import InsecureRequestWarning
 # cooked up by
 # Dominik Penner (@zer0pwn)
 # &&& Jake Bolam (@xixasec)
+# -------------------------
+# rewrited by
+# Sheryx00 (@sheryx00)
+
 
 WHITE   = '\033[37m'
 BLUE    = '\033[34m'
@@ -18,7 +22,7 @@ GREEN   = "\u001b[32m"
 BOLD    = '\033[1m'
 END     = '\033[0m'
 
-class porchpirate():
+class porchPirate():
     warnings.simplefilter('ignore', InsecureRequestWarning)
     def __init__(self, proxy=None):
         self.WS_API_URL = 'https://www.postman.com/_api/ws/proxy'
@@ -39,51 +43,56 @@ class porchpirate():
         else:
             self.proxies = None
 
+    def safe_get(data, keys, default=None):
+        """
+        Safely retrieve a nested key from a dictionary.
+        
+        Args:
+            data (dict): The dictionary to search.
+            keys (list): List of nested keys.
+            default: Default value if any key is missing.
+        
+        Returns:
+            Value if found, otherwise default.
+        """
+        try:
+            for key in keys:
+                data = data[key]
+            return data
+        except (KeyError, IndexError, TypeError):
+            return default
+
     def _show_formatted_search_results(self, search_results):
-        for result in search_results['data']:
-            try:
-                entity_type = result['document']['entityType']
-            except:
-                entity_type = 'Unknown'
-            try:
-                entity_id = result['document']['id']
-            except:
-                entity_id = False
-            try:
-                workspace_id = result['document']['workspaces'][0]['id']
-            except:
-                workspace_id = False
-            try:
-                name = result['document']['name']
-            except:
-                name = False
-            try:
-                author = result['document']['publisherHandle']
-            except:
-                author = False
-            try:
-                authorId = result['document']['publisherId']
-            except:
-                authorId = False
-            try:
-                description = result['document']['description']
-            except:
-                description = False
-            try:
-                lastupdated = result['document']['updatedAt']
-            except:
-                lastupdated = "No data available"
-            print(f"[{CYAN}{entity_type}{END}] [{YELLOW}{entity_id}{END}]")
-            if author:
-                print(f" {BOLD}Author: {END}{CYAN}{author} [{authorId}]{END}")
-            if workspace_id:
-                print(f" {BOLD}Workspace: {END}{YELLOW}{workspace_id}{END}")
-            if name:
-                print(f" {BOLD}Name: {END}{GREEN}{name}{END}")
-            if description:
-                print(f" {BOLD}Description: {END}{WHITE}{description}{END}")
+        # Mapping of fields and their paths in the result JSON
+        fields = {
+            "entity_type": (["document", "entityType"], "Unknown"),
+            "entity_id": (["document", "id"], "N/A"),
+            "workspace_id": (["document", "workspaces", 0, "id"], "N/A"),
+            "name": (["document", "name"], "N/A"),
+            "author": (["document", "publisherHandle"], "N/A"),
+            "author_id": (["document", "publisherId"], "N/A"),
+            "description": (["document", "description"], "N/A"),
+            "last_updated": (["document", "updatedAt"], "No data available")
+        }
+
+        # Iterate through results and print formatted output
+        for result in search_results.get('data', []):
+            data = {}
+            for key, (path, default) in fields.items():
+                data[key] = safe_get(result, path, default)
+
+            # Print formatted output
+            print(f"[{CYAN}{data['entity_type']}{END}] [{YELLOW}{data['entity_id']}{END}]")
+            if data['author'] != "N/A":
+                print(f" {BOLD}Author: {END}{CYAN}{data['author']} [{data['author_id']}]{END}")
+            if data['workspace_id'] != "N/A":
+                print(f" {BOLD}Workspace: {END}{YELLOW}{data['workspace_id']}{END}")
+            if data['name'] != "N/A":
+                print(f" {BOLD}Name: {END}{GREEN}{data['name']}{END}")
+            if data['description'] != "N/A":
+                print(f" {BOLD}Description: {END}{WHITE}{data['description']}{END}")
             print()
-    
+                
     def _show_formatted_workspace(self, workspace_results):
         user = workspace_results['data']['profileInfo']['publicName']
         userid = workspace_results['data']['profileInfo']['profileId']
