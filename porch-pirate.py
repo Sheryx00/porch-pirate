@@ -56,18 +56,19 @@ def main():
         # Workspace Operations
         if args.workspace:
             log("Fetching workspace details...")
-            workspace = p.workspace(args.workspace)
-            print(json.dumps(workspace, indent=4))
+            workspace = json.loads(p.workspace(args.workspace))
+            formats.format_workspace(workspace)
 
             if args.globals:
                 log("Fetching workspace globals...")
-                globals_data = p.workspace_globals(args.workspace)
-                print(json.dumps(globals_data, indent=4))
+                globals_data = json.loads(p.workspace_globals(args.workspace))
+                formats.format_globals(globals_data)
+
 
             if args.collections:
                 log("Fetching workspace collections...")
-                collections = p.collections(args.workspace)
-                print(json.dumps(collections, indent=4))
+                collections = json.loads(p.collections(args.workspace))
+                formats.format_collection(collections)
 
         # Placeholder: Requests
         if args.requests:
